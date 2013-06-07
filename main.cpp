@@ -25,12 +25,17 @@ void PrintUsage() {
     cerr << "\t\texamples:" << endl;
     cerr << "\t\t\t- ls {}" << endl;
     cerr << "\t\t\t- cat {1} {0}" << endl;
+    cerr << "\t\tYou can use bash-style replacements:" << endl;
+    cerr << "\t\t\t- mv {} {0/%txt/md}" << endl;
     cerr << endl;
     cerr << "\tExample usage:" << endl;
     cerr << "\t\tThe current directory contains story1, story1.part2, story2 and story2.part2." << endl;
     cerr << "\t\tRunning the following command will result in the files *.part2 being appended" << endl;
     cerr << "\t\tto the other files and being removed:" << endl;
     cerr << "\t\t\t" << command << " 'cat {} >> {} && rm {0}' '*.part2' 'story{1,2}'" << endl;
+    cerr << "\t\tThe current directory contains story1.part1, story1.part2, story2.part1 and" << endl;
+    cerr << "\t\tstory2.part2. To create files story1 and story2 containing the entire stories:" << endl;
+    cerr << "\t\t\t" << command << " 'cat {} {0/%1/2} > {0/%.part1/}' \\*.part1" << endl;
 }
 
 bool matchesNoArg(const char *str, const char *pattern) {

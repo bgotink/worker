@@ -28,8 +28,9 @@ namespace worker {
 
     class Command {
     public:
-        typedef std::tuple<size_t, uint, size_t> placeholder_t; // index @ string, placeholder idx, placeholder length
-        typedef std::vector<std::tuple<size_t, uint, size_t>> indices_t;
+        typedef std::tuple<std::string, std::string> replacement_t;
+        typedef std::tuple<size_t, uint, size_t, replacement_t*> placeholder_t; // index @ string, placeholder idx, placeholder length
+        typedef std::vector<placeholder_t> indices_t;
         typedef std::vector<std::string> arguments_t;
         
         static inline size_t getStringIndex(const placeholder_t &placeholder) {
@@ -42,6 +43,10 @@ namespace worker {
         
         static inline size_t getPlaceholderLength(const placeholder_t &placeholder) {
             return std::get<2>(placeholder);
+        }
+        
+        static inline replacement_t *getReplacement(const placeholder_t &placeholder) {
+            return std::get<3>(placeholder);
         }
         
     private:
