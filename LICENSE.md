@@ -21,5 +21,5 @@ IN THE SOFTWARE.
 
 Except  as contained in  this notice,  the name(s) of  the  above  copyright
 holders  shall not be used in advertising or  otherwise to promote the sale,
-use or other dealings in this Software  without prior written authorization.
+use or other dealings in this Software without prior written authorization.
 ```

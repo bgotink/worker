@@ -1,11 +1,11 @@
 ## Requirements
 
-* a GCC compiler supporting C++11 std::thread, std::mutex and std::condition_variable
+* a GCC compiler supporting C++11 ```std::thread```, ```std::mutex``` and ```std::condition_variable```
 * make
 
 ## Building
 
-* run make
+* run ```make```
 
 ## Running
 
