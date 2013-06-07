@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     worker::Debug("Parsed command with %u placeholders", nbPlaceholders);
 
     if (nbPlaceholders != static_cast<uint>(argc - argpos)) {
-        worker::Fatal("Invalid number of arguments given, expected %d placeholder arguments but got %d", nbPlaceholders, argc - argpos + 1);
+        worker::Fatal("Invalid number of arguments given, expected %d placeholder arguments but got %d", nbPlaceholders, argc - argpos);
     }
 
     vector<string> *jobArguments = new vector<string>[nbPlaceholders];
