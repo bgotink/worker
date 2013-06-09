@@ -10,32 +10,39 @@
 
 using namespace std;
 
+const char * usage = R"EOS(    Usage:
+        %1$s [-v] [-q] [-n nthreads] [--] <command> <arguments...>
+    
+            -v              run verbose
+            -q              run quiet
+            -n nthreads     use nthreads threads
+            --              end option parsing
+
+    Placeholders:
+        You can use {} or {i} with i a non-negative integer to refer
+        to placeholders:
+            - ls {}
+            - cat {1} {0}
+        BASH-style replacements are supported:
+            - cat {} > {0/e/o}      # replace the first 'e' with 'o'
+            - cat {} > {0//e/o}     # replace all 'e' with 'o'
+            - cat {} > {0/%%e/o}     # replace the final character
+                                    # with 'o' if it is 'e'
+    
+    Example usage:
+        The current directory contains story1, story1.part2, story2 and story2.part2.
+        Running the following command will result in the files *.part2 being appended
+        to the other files and being removed:
+                %1$s 'cat {} >> {} && rm {0}' '*.part2' 'story{1,2}'
+
+        The current directory contains story1.part1, story1.part2, story2.part1 and
+        story2.part2. To create files story1 and story2 containing the entire stories:
+                %1$s 'cat {} {0/%1/2} > {0/%%.part1/}' \*.part1
+)EOS";
+
 char *command;
 void PrintUsage() {
-    cerr << "Usage:" << endl;
-    cerr << "\t" << command << " [-v] [-q] [-n nthreads] [--] <command> <arguments...>" << endl;
-    cerr << endl;
-    cerr << "\t\t-v\t\trun verbose" << endl;
-    cerr << "\t\t-q\t\trun quiet" << endl;
-    cerr << "\t\t-n nthreads\tuse nthreads threads" << endl;
-    cerr << "\t\t--\t\tend option parsing" << endl;
-    cerr << endl;
-    cerr << "\tPlaceholders:" << endl;
-    cerr << "\t\tYou can use {} or {i} with i a non-negative integer to refer to placeholders." << endl;
-    cerr << "\t\texamples:" << endl;
-    cerr << "\t\t\t- ls {}" << endl;
-    cerr << "\t\t\t- cat {1} {0}" << endl;
-    cerr << "\t\tYou can use bash-style replacements:" << endl;
-    cerr << "\t\t\t- mv {} {0/%txt/md}" << endl;
-    cerr << endl;
-    cerr << "\tExample usage:" << endl;
-    cerr << "\t\tThe current directory contains story1, story1.part2, story2 and story2.part2." << endl;
-    cerr << "\t\tRunning the following command will result in the files *.part2 being appended" << endl;
-    cerr << "\t\tto the other files and being removed:" << endl;
-    cerr << "\t\t\t" << command << " 'cat {} >> {} && rm {0}' '*.part2' 'story{1,2}'" << endl;
-    cerr << "\t\tThe current directory contains story1.part1, story1.part2, story2.part1 and" << endl;
-    cerr << "\t\tstory2.part2. To create files story1 and story2 containing the entire stories:" << endl;
-    cerr << "\t\t\t" << command << " 'cat {} {0/%1/2} > {0/%.part1/}' \\*.part1" << endl;
+    fprintf(stderr, usage, command);
 }
 
 bool matchesNoArg(const char *str, const char *pattern) {
