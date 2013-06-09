@@ -4,7 +4,7 @@
 * the [boost](boost.org) regex library
 * make
 
-To install the requirements on OS X using [homebrew](/mxcl/homebrew):
+To install the requirements on OS X using [homebrew](//github.com/mxcl/homebrew):
 
 ```
 brew tap homebrew/versions
