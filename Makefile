@@ -25,6 +25,8 @@ dirs:
 	
 clean:
 	/bin/rm -rf bin/worker objs/*
+	
+rebuild: clean default
 
 bin/worker: objs/main.o objs/libworker.a
 	@echo "Linking $@"
