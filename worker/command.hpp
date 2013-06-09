@@ -25,29 +25,64 @@ namespace worker {
         };
     
     }
+    
+    namespace impl {
+        
+        typedef enum { REPLACE_FIRST, REPLACE_ALL, REPLACE_END } ReplacementType;
+        
+        struct Replacement : public std::tuple<ReplacementType, std::string, std::string> {
+        private:
+            typedef std::tuple<ReplacementType, std::string, std::string> super_t;
+            
+        public:
+            Replacement(char typeIdentifier, const std::string &from, const std::string &to);
+        
+            inline ReplacementType getType() const {
+                return std::get<0>(*this);
+            }
+            
+            inline const std::string &getOriginal() const {
+                return std::get<1>(*this);
+            }
+            
+            inline const std::string &getReplacement() const {
+                return std::get<2>(*this);
+            }
+            
+            std::string &apply(std::string &str) const;
+        };
+        
+        struct Placeholder : public std::tuple<size_t, uint, size_t, Replacement*> {
+        private:
+            typedef std::tuple<size_t, uint, size_t, Replacement*> super_t;
+            
+        public:
+            Placeholder(size_t offset, uint idx, size_t length, Replacement *replacement);
+            
+            inline size_t getOffset() const {
+                return std::get<0>(*this);
+            }
+            
+            inline uint getIndex() const {
+                return std::get<1>(*this);
+            }
+            
+            inline size_t getLength() const {
+                return std::get<2>(*this);
+            }
+            
+            inline const Replacement *getReplacement() const {
+                return std::get<3>(*this);
+            }
+        };
+    }
 
     class Command {
     public:
-        typedef std::tuple<std::string, std::string> replacement_t;
-        typedef std::tuple<size_t, uint, size_t, replacement_t*> placeholder_t; // index @ string, placeholder idx, placeholder length
+        typedef impl::Replacement replacement_t;
+        typedef impl::Placeholder placeholder_t;
         typedef std::vector<placeholder_t> indices_t;
         typedef std::vector<std::string> arguments_t;
-        
-        static inline size_t getStringIndex(const placeholder_t &placeholder) {
-            return std::get<0>(placeholder);
-        }
-        
-        static inline uint getPlaceholderIndex(const placeholder_t &placeholder) {
-            return std::get<1>(placeholder);
-        }
-        
-        static inline size_t getPlaceholderLength(const placeholder_t &placeholder) {
-            return std::get<2>(placeholder);
-        }
-        
-        static inline replacement_t *getReplacement(const placeholder_t &placeholder) {
-            return std::get<3>(placeholder);
-        }
         
     private:
         const std::string command;

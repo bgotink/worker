@@ -18,10 +18,16 @@ namespace worker {
     }
     
     ThreadPool::~ThreadPool() {
+        Debug("Destructing ThreadPool...");
         if (!isJoined())
             terminate();
         
+        for (uint i = 0; i < size; i++)
+            if (threads[i].joinable())
+                threads[i].detach();
+        
         delete[] threads;
+        Debug("ThreadPool destructed");
     }
     
     // joining stuff
@@ -38,7 +44,37 @@ namespace worker {
             thread_nop.notify_all();
         }
         
-        join();
+        bool threadsAlreadyEnded = false;
+        {
+            lock_t lockNbAT(nbATMutex);
+            if (nbActiveThreads == 0)
+                threadsAlreadyEnded = true;
+        }
+        
+        if (!joining && !threadsAlreadyEnded) {
+            Debug("Notifying threads that the ThreadPool is joining");
+            joining = true;
+            thread_nop.notify_all();
+        }
+        
+        if (!threadsAlreadyEnded) {
+            Debug("Waiting until join completes");
+            joinCV.wait(lock, [this]{ return this->nbActiveThreads == 0; });
+            Debug("Waiting ended");
+        }
+        
+        if (joined) {
+            Debug("Already joined thread objects");
+            return;
+        }
+        
+        Debug("Joining thread objects");
+        for (uint i = 0; i < size; i++)
+            threads[i].join();
+        Debug("Joining done");
+        
+        joining = false;
+        joined = true;
     }
     
     void ThreadPool::join() const {
@@ -48,24 +84,34 @@ namespace worker {
         if (joined)
             return;
         
+        bool threadsAlreadyEnded = false;
         {
             lock_t lockNbAT(nbATMutex);
             if (nbActiveThreads == 0)
-                return;
+                threadsAlreadyEnded = true;
         }
         
-        if (!joining) {
+        if (!joining && !threadsAlreadyEnded) {
+            Debug("Notifying threads that the ThreadPool is joining");
             joining = true;
             thread_nop.notify_all();
         }
         
-        joinCV.wait(lock);
-        
-        for (uint i = 0; i < size; i++) {
-            if (threads[i].joinable()) {
-                threads[i].detach();
-            }
+        if (!threadsAlreadyEnded) {
+            Debug("Waiting until join completes");
+            joinCV.wait(lock, [this]{ return this->nbActiveThreads == 0; });
+            Debug("Waiting ended");
         }
+        
+        if (joined) {
+            Debug("Already joined thread objects");
+            return;
+        }
+        
+        Debug("Joining thread objects");
+        for (uint i = 0; i < size; i++)
+            threads[i].join();
+        Debug("Joining done");
         
         joining = false;
         joined = true;
@@ -89,11 +135,13 @@ namespace worker {
     void ThreadPool::setThreadActive() {
         lock_t lock(nbATMutex);
         nbActiveThreads ++;
+        Debug("Activating thread, active thread count = %u", nbActiveThreads);
     }
     
     void ThreadPool::setThreadInactive() {
         lock_t lock(nbATMutex);
         nbActiveThreads --;
+        Debug("Deactivating thread, active thread count = %u", nbActiveThreads);
         
         if (nbActiveThreads == 0)
             joinCV.notify_all();
@@ -109,7 +157,7 @@ namespace worker {
         queue.push(command);
         
         if (empty) {
-            thread_nop.notify_one();
+            thread_nop.notify_all();
         }
     }
     
@@ -118,11 +166,13 @@ namespace worker {
         Debug("Requesting command, current queue size is %u", queue.size());
         
         if (queue.empty()) {
-            thread_nop.wait(lock);
+            if (!isJoining())
+                thread_nop.wait(lock);
             return "";
         }
         
-        string command = queue.front();
+        Debug("queue size: %u", queue.size());
+        string command(queue.front());
         queue.pop();
         
         return command;
@@ -137,51 +187,48 @@ namespace worker {
     
     namespace impl {
         void execute(ThreadPool &pool, thread &thread) {
+            Debug("Thread started.");
             pool.setThreadActive();
-        
-            thread::id thread_id = this_thread::get_id();
-            string _thread_id_str;
-            {
-                stringstream ss;
-                ss << thread_id;
-                _thread_id_str = ss.str();
-            }
-            const char * const thread_id_str = _thread_id_str.c_str();
-            
-            Debug("Thread %s started.", thread_id_str);
         
             while(true) {
                 if (pool.isJoining()) {
                     if (pool.isTerminating()) {
                         // terminating, ignore queue length
-                        Debug("Terminating thread %s", thread_id_str);
+                        Debug("Terminating thread");
                         break;
                     }
                     
                     if (pool.isQueueEmpty()) {
                         // joining & queue is empty
-                        Debug("Joining thread %s", thread_id_str);
+                        Debug("Joining thread");
                         break;
+                    } else {
+                        Debug("Pool is joining but queue is not empty yet");
                     }
 
                     // joining but queue is not empty yet!
                 }
             
+                Debug("Trying to get next command");
                 string command = pool.getNextCommand();
             
-                if (command == "")
+                if (command == "") {
+                    Debug("Got empty command, continuing");
                     continue;
+                }
             
-                Debug("Thread %s is running command \"%s\"", thread_id_str, command.c_str());
-                int retval = System::exec(command);
+                Debug("running command \"%s\"", command.c_str());
+                int retval = System::exec(command + " > /dev/null 2>&1 < /dev/null");
                 if (retval != 0)
-                    Debug("Thread %s: command \"%s\" exited with code %d", thread_id_str, command.c_str(), retval);
+                    Warn("command \"%s\" exited with code %d", command.c_str(), retval);
+                else
+                    Debug("Command \"%s\" executed successfully", command.c_str());
             }
         
-            Debug("Thread %s ended.", thread_id_str);
+            Debug("Thread shutting down.");
         
             pool.setThreadInactive();
-            thread.detach();
+            Debug("Thread ended");
         } // void execute(ThreadPool&)
     } // namespace impl
 }

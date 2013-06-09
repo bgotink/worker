@@ -7,6 +7,7 @@
 #include <cmath>
 #include <glob.h>
 #include <mutex>
+#include <thread>
 
 using namespace std;
 
@@ -95,6 +96,7 @@ namespace worker {
         }
 #endif
         
+        cerr << "[" << std::this_thread::get_id() << "]   \t";
         cerr << "[" << message << "]" << "\t" << errorBuf << endl;
         fflush(stderr);
         

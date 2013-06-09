@@ -1,6 +1,13 @@
 CXX = g++
 
-LIBS = 
+ARCH = $(shell uname)
+
+ifeq ($(ARCH),Darwin)
+	LIBS = -L/usr/local/bin -lboost_regex-mt
+else
+	LIBS = -lboost_regex
+endif
+
 WARN = -Wall
 INCL = -I. -Iworker
 #OPT	 = -O3
@@ -9,7 +16,7 @@ OPT	= -g3
 SRCS = $(wildcard worker/*.cpp)
 OBJS = $(addprefix objs/, $(subst /,_,$(SRCS:.cpp=.o)))
 
-CXXFLAGS = -std=gnu++11 $(WARN) $(OPT) $(INCL)
+CXXFLAGS = -std=gnu++11 -pthread $(WARN) $(OPT) $(INCL)
 
 default: dirs bin/worker
 
@@ -17,7 +24,7 @@ dirs:
 	/bin/mkdir -p bin objs
 	
 clean:
-	/bin/rm -rf bin/worker objs/*.o
+	/bin/rm -rf bin/worker objs/*
 
 bin/worker: objs/main.o objs/libworker.a
 	@echo "Linking $@"

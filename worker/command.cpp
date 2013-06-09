@@ -1,29 +1,37 @@
 #include "command.hpp"
 #include "api.hpp"
 #include <cstring>
-#include <regex.h>
 #include <cstdlib>
 #include <sstream>
 
-// old placeholder
-//#define PLACEHOLDER_REGEX "{([0-9]*)}"
+#include <boost/regex.hpp>
 
 /*
  * {
  *  (
  *    ([0-9]+)
  *    (
- *      /%([^/]+)/(.+)
+ *      /([%/]?)([^/]+)/(.+)
  *    )?
  *  )?
  * }
  */
-#define PLACEHOLDER_REGEX         "{(([0-9]+)(/%([^/]+)/([^}]*))?)?}"
-#define REG_NB_GROUPS             5
+#define PLACEHOLDER_REGEX         "" \
+    "[{]" \
+        "(" \
+            "([0-9]+)" \
+            "(" \
+                "/([%/]?)([^/]*)/([^/}]*)" \
+            ")?" \
+        ")?" \
+    "[}]"
 #define REG_IDX_GROUP_NUMBER      2
 #define REG_IDX_GROUP_REPLACE     3
-#define REG_IDX_GROUP_REP_OLD     4
-#define REG_IDX_GROUP_REP_NEW     5
+#define REG_IDX_GROUP_REP_TYP     4
+#define REG_IDX_GROUP_REP_OLD     5
+#define REG_IDX_GROUP_REP_NEW     6
+
+
 
 using namespace std;
 
@@ -66,71 +74,104 @@ namespace worker {
     
     }
     
-    static regex_t placeholder;
-    static bool placeholderInitialised(false);
+    namespace impl {
     
-    /* _NOT_ thread safe */
-    void initPlaceholder() {
-        if (placeholderInitialised)
-            return;
-        
-        int retval = regcomp(&placeholder, PLACEHOLDER_REGEX, REG_EXTENDED);
-        
-        if (retval != 0) {
-            Fatal("regcomp returned error %d", retval);
+        Replacement::Replacement(char typeIdentifier, const std::string &from, const std::string &to)
+            : super_t((typeIdentifier == '%') ? REPLACE_END :
+                    ((typeIdentifier == '/') ? REPLACE_ALL : REPLACE_FIRST),
+                    from, to)
+        {}
+    
+        string &Replacement::apply(string &str) const {
+            switch(getType()) {
+            case REPLACE_FIRST: {
+                size_t idx = str.find(getOriginal());
+                if (idx == string::npos) return str;
+                size_t len = getOriginal().length();
+                
+                str.replace(idx, len, getReplacement());
+                return str;
+            }
+            case REPLACE_ALL: {
+                size_t offset = 0;
+                string copy = str;
+                while (true) {
+                    size_t idx = copy.find(getOriginal());
+                    if (idx == string::npos) return str;
+                    size_t len = getOriginal().length();
+                
+                    str.replace(offset + idx, len, getReplacement());
+
+                    offset += idx + len;
+                    copy = str.c_str() + offset;
+                }
+            }
+            case REPLACE_END: {
+                size_t offset = str.length() - getOriginal().length();
+                
+                if (strcmp(str.c_str() + offset, getOriginal().c_str()) != 0) {
+                    return str;
+                }
+                
+                str.replace(offset, getOriginal().length(), getReplacement());
+                return str;
+            }
+            default: 
+                return str;
+            }
         }
         
-        placeholderInitialised = true;
+        Placeholder::Placeholder(size_t offset, uint idx, size_t length, Replacement *replacement)
+            : super_t(offset, idx, length, replacement)
+        {}
     }
+    
+    typedef boost::regex regex_t;
+    typedef boost::cmatch regmatch_t;
+    
+    static regex_t placeholderRegex(PLACEHOLDER_REGEX);
     
     uint getNbPlaceholders(const Command::indices_t &indices) {
         int result = -1;
         
         for (Command::indices_t::const_iterator current = indices.begin(), end = indices.end(); current != end; current++) {
-            result = max(result, static_cast<int>(Command::getPlaceholderIndex(*current)));
+            result = max(result, static_cast<int>(current->getIndex()));
         }
         
         return uint(result + 1);
     }
     
     Command::indices_t getPlaceholders(const string &str) {
-        initPlaceholder();
-        
-        regmatch_t matches[REG_NB_GROUPS + 1];
-        
         Command::indices_t result;
         
-        int retval;
         uint currentRef;
         size_t stringOffset = 0;
+        const char * const strStart = str.c_str();
+        const char * strCurrent = strStart;
         
-        Debug("Locating placeholders in string \"%s\"", str.c_str());
+        regmatch_t match;
+        
+        Debug("Locating placeholders in string \"%s\"", strStart);
         
         while (true) {
-            if (0 != (retval = regexec(&placeholder, str.c_str() + stringOffset, REG_NB_GROUPS + 1, matches, 0))) {
-                if (retval == REG_NOMATCH) {
-                    Debug("Found a total of %u placeholders", result.size());
-                    return result;
-                }
+            if (!boost::regex_search(strCurrent, match, placeholderRegex))
+                return result;
             
-                Fatal("regexec returned value %d", retval);
-            }
-            
-            size_t offset = matches[0].rm_so;
-            size_t length = size_t(matches[0].rm_eo - offset);
+            size_t offset = match.position();
+            size_t length = match.length();
             
             uint placeholderIdx;
             Command::replacement_t *replacementPtr = NULL;
             if (length == 2)
                 placeholderIdx = currentRef++;
             else {
-                size_t idxOffset = matches[REG_IDX_GROUP_NUMBER].rm_so;
-                size_t idxLength = size_t(matches[REG_IDX_GROUP_NUMBER].rm_eo - idxOffset);
+                size_t idxOffset = match.position(REG_IDX_GROUP_NUMBER);
+                size_t idxLength = match.length(REG_IDX_GROUP_NUMBER);
                 
                 char idx[idxLength + 1];
-                memcpy(idx, str.c_str() + idxOffset, idxLength);
+                memcpy(idx, strCurrent + idxOffset, idxLength);
                 idx[idxLength] = '\0';
-                
+
                 int _pIdx = atoi(idx);
                 if (_pIdx < 0) {
                     throw exception::negative_index(_pIdx);
@@ -139,34 +180,36 @@ namespace worker {
                 
                 if (length != idxLength + 2) {
                     // replacement is a match!
-                    size_t oldOffset = matches[REG_IDX_GROUP_REP_OLD].rm_so;
-                    size_t oldLength = matches[REG_IDX_GROUP_REP_OLD].rm_eo - oldOffset;
+                    size_t oldOffset = match.position(REG_IDX_GROUP_REP_OLD);
+                    size_t oldLength = match.length(REG_IDX_GROUP_REP_OLD);
                     
-                    size_t newOffset = matches[REG_IDX_GROUP_REP_NEW].rm_so;
-                    size_t newLength = matches[REG_IDX_GROUP_REP_NEW].rm_eo - newOffset;
+                    size_t newOffset = match.position(REG_IDX_GROUP_REP_NEW);
+                    size_t newLength = match.length(REG_IDX_GROUP_REP_NEW);
                     
-                    oldOffset += stringOffset;
-                    newOffset += stringOffset;
+                    char typeIdentifier = '\0';
+                    if (match.length(REG_IDX_GROUP_REP_TYP))
+                        typeIdentifier = *(strCurrent + match.position(REG_IDX_GROUP_REP_TYP));
                     
                     char oldPart[oldLength + 1];
                     char newPart[newLength + 1];
                     
-                    memcpy(oldPart, str.c_str() + oldOffset, oldLength);
+                    memcpy(oldPart, strCurrent + oldOffset, oldLength);
                     oldPart[oldLength] = '\0';
                     
-                    memcpy(newPart, str.c_str() + newOffset, newLength);
+                    memcpy(newPart, strCurrent + newOffset, newLength);
                     newPart[newLength] = '\0';
                     
                     Debug("Command has replacement %s->%s", oldPart, newPart);
-                    replacementPtr = new Command::replacement_t(oldPart, newPart);
+                    replacementPtr = new Command::replacement_t(typeIdentifier, oldPart, newPart);
                 }
             }
             
-            Debug("Placeholder %.*s references placeholder %u", length, str.c_str() + stringOffset + offset, placeholderIdx);
+            Debug("Placeholder %.*s references placeholder %u", length, strCurrent + offset, placeholderIdx);
             
             result.push_back(Command::placeholder_t(stringOffset + offset, placeholderIdx, length, replacementPtr));
             
             stringOffset += offset + length;
+            strCurrent += offset + length;
         }
     }
 
@@ -177,7 +220,6 @@ namespace worker {
         nbPlaceholders = ::worker::getNbPlaceholders(indices);
     }
     
-
     string Command::fillArguments(const arguments_t &arguments) const {
         if (arguments.size() != nbPlaceholders)
             throw exception::invalid_argument_count(nbPlaceholders, arguments.size());
@@ -185,23 +227,16 @@ namespace worker {
         string command = this->command;
         
         for (indices_t::const_reverse_iterator current = indices.rbegin(), end = indices.rend(); current != end; current++) {
-            size_t strIdx = getStringIndex(*current);
-            size_t strLen = getPlaceholderLength(*current);
+            size_t strIdx = current->getOffset();
+            size_t strLen = current->getLength();
             
-            uint placeholderId = getPlaceholderIndex(*current);
+            uint placeholderId = current->getIndex();
             
-            replacement_t *replacement = getReplacement(*current);
+            const replacement_t *replacement = current->getReplacement();
             string argument = arguments[placeholderId];
             
             if (replacement != NULL) {
-                string &oldPart = get<0>(*replacement);
-                string &newPart = get<1>(*replacement);
-                Debug("running replacement %s->%s on %s", oldPart.c_str(), newPart.c_str(), argument.c_str());
-                
-                size_t replIdx;
-                if (string::npos != (replIdx = argument.rfind(oldPart))) {
-                    argument.replace(replIdx, oldPart.length(), newPart);
-                }
+                replacement->apply(argument);
             }
             
             Debug("running command.replace(%u, %u, \"%s\")", strIdx, strLen, argument.c_str());
