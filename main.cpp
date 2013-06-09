@@ -37,7 +37,7 @@ const char * usage = R"EOS(    Usage:
 
         The current directory contains story1.part1, story1.part2, story2.part1 and
         story2.part2. To create files story1 and story2 containing the entire stories:
-                %1$s 'cat {} {0/%1/2} > {0/%%.part1/}' \*.part1
+                %1$s 'cat {} {0/%%1/2} > {0/%%.part1/}' \*.part1
 )EOS";
 
 char *command;
