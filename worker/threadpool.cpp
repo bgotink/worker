@@ -9,7 +9,7 @@ using namespace std;
 
 namespace worker {
     
-    ThreadPool::ThreadPool(uint size) : threads(new thread[size]), size(size), joining(false), joined(false) {
+    ThreadPool::ThreadPool(uint size) : threads(new thread[size]), size(size), nbThreadsAlive(size), joining(false), joined(false) {
         Debug("Creating threadpool with %u threads", size);
         for (uint i = 0; i < size; i++) {
             threads[i] = thread(impl::execute, ref(*this), ref(threads[i]));
@@ -46,8 +46,8 @@ namespace worker {
         
         bool threadsAlreadyEnded = false;
         {
-            lock_t lockNbAT(nbATMutex);
-            if (nbActiveThreads == 0)
+            lock_t lockNbTA(nbTAMutex);
+            if (nbThreadsAlive == 0)
                 threadsAlreadyEnded = true;
         }
         
@@ -59,7 +59,7 @@ namespace worker {
         
         if (!threadsAlreadyEnded) {
             Debug("Waiting until join completes");
-            joinCV.wait(lock, [this]{ return this->nbActiveThreads == 0; });
+            joinCV.wait(lock, [this]{ return this->nbThreadsAlive == 0; });
             Debug("Waiting ended");
         }
         
@@ -86,8 +86,8 @@ namespace worker {
         
         bool threadsAlreadyEnded = false;
         {
-            lock_t lockNbAT(nbATMutex);
-            if (nbActiveThreads == 0)
+            lock_t lockNbTA(nbTAMutex);
+            if (nbThreadsAlive == 0)
                 threadsAlreadyEnded = true;
         }
         
@@ -99,7 +99,7 @@ namespace worker {
         
         if (!threadsAlreadyEnded) {
             Debug("Waiting until join completes");
-            joinCV.wait(lock, [this]{ return this->nbActiveThreads == 0; });
+            joinCV.wait(lock, [this]{ return this->nbThreadsAlive == 0; });
             Debug("Waiting ended");
         }
         
@@ -132,18 +132,12 @@ namespace worker {
         return terminating;
     }
     
-    void ThreadPool::setThreadActive() {
-        lock_t lock(nbATMutex);
-        nbActiveThreads ++;
-        Debug("Activating thread, active thread count = %u", nbActiveThreads);
-    }
-    
-    void ThreadPool::setThreadInactive() {
-        lock_t lock(nbATMutex);
-        nbActiveThreads --;
-        Debug("Deactivating thread, active thread count = %u", nbActiveThreads);
+    void ThreadPool::setThreadFinished() {
+        lock_t lock(nbTAMutex);
+        nbThreadsAlive --;
+        Debug("Deactivating thread, active thread count = %u", nbThreadsAlive);
         
-        if (nbActiveThreads == 0)
+        if (nbThreadsAlive == 0)
             joinCV.notify_all();
     }
     
@@ -188,7 +182,6 @@ namespace worker {
     namespace impl {
         void execute(ThreadPool &pool, thread &thread) {
             Debug("Thread started.");
-            pool.setThreadActive();
         
             while(true) {
                 if (pool.isJoining()) {
@@ -227,7 +220,7 @@ namespace worker {
         
             Debug("Thread shutting down.");
         
-            pool.setThreadInactive();
+            pool.setThreadFinished();
             Debug("Thread ended");
         } // void execute(ThreadPool&)
     } // namespace impl

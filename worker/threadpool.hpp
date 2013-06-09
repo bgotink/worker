@@ -44,8 +44,8 @@ namespace worker {
         thread_t * const threads;
         const uint size;
         
-        uint nbActiveThreads;
-        mutable mutex_t nbATMutex;
+        uint nbThreadsAlive;
+        mutable mutex_t nbTAMutex;
         
         mutable condition_var_t thread_nop;
         mutable condition_var_t joinCV;
@@ -58,8 +58,7 @@ namespace worker {
         mutable bool joined;
         mutable mutex_t joinMutex;
         
-        void setThreadActive();
-        void setThreadInactive();
+        void setThreadFinished();
         
         bool isTerminating() const;
         bool isQueueEmpty() const;
