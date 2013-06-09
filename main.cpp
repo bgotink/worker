@@ -5,7 +5,7 @@
 
 #include "string.h"
 #include <string>
-#include <iostream>
+#include <cstdio>
 #include <cstdlib>
 
 using namespace std;
