@@ -1,7 +1,7 @@
 ## Requirements
 
 * a GCC compiler supporting C++11 ```std::thread```, ```std::mutex``` and ```std::condition_variable```
-* the [boost](boost.org) regex library
+* the [boost](http://boost.org) regex library
 * make
 
 To install the requirements on OS X using [homebrew](//github.com/mxcl/homebrew):
