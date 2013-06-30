@@ -1,9 +1,9 @@
-HAVE_CLANG = #$(shell which clang)
+HAVE_CLANG = $(shell which clang)
 
 ifeq ($(HAVE_CLANG),)
     CXX = g++ -std=gnu++11
 else
-    CXX = clang -std=c++11 -stdlib=libc++
+    CXX = clang++ -std=c++11 -stdlib=libc++
 endif
 
 ARCH = $(shell uname)
