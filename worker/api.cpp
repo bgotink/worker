@@ -21,7 +21,7 @@ namespace worker {
             o.str = NULL;
         }
         
-        exception::~exception() {
+        exception::~exception() throw() {
             if (str != NULL) {
                 delete str;
                 str = NULL;

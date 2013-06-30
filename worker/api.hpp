@@ -31,7 +31,7 @@ namespace worker {
         public:
             exception();
             exception(const exception &o);
-            virtual ~exception();
+            virtual ~exception() throw();
             virtual const char *what() const throw();
         };
     
