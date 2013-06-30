@@ -144,7 +144,7 @@ namespace worker {
     Command::indices_t getPlaceholders(const string &str) {
         Command::indices_t result;
 
-        uint currentRef;
+        uint currentRef = 0;
         size_t stringOffset = 0;
         const char * const strStart = str.c_str();
         const char * strCurrent = strStart;
