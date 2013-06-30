@@ -1,4 +1,10 @@
-CXX = g++
+HAVE_CLANG = #$(shell which clang)
+
+ifeq ($(HAVE_CLANG),)
+    CXX = g++ -std=gnu++11
+else
+    CXX = clang -std=c++11 -stdlib=libc++
+endif
 
 ARCH = $(shell uname)
 
@@ -16,7 +22,7 @@ OPT	= -g3
 SRCS = $(wildcard worker/*.cpp)
 OBJS = $(addprefix objs/, $(subst /,_,$(SRCS:.cpp=.o)))
 
-CXXFLAGS = -std=gnu++11 -pthread $(WARN) $(OPT) $(INCL)
+CXXFLAGS = $(WARN) $(OPT) $(INCL)
 
 default: dirs bin/worker
 
