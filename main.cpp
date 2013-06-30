@@ -23,7 +23,7 @@ const char * usage = R"EOS(    Usage:
         to placeholders:
             - ls {}
             - cat {1} {0}
-        BASH-style replacements are supported:
+        BASH-style replacements are supported (note: NOT a regular expression):
             - cat {} > {0/e/o}      # replace the first 'e' with 'o'
             - cat {} > {0//e/o}     # replace all 'e' with 'o'
             - cat {} > {0/%%e/o}     # replace the final character
