@@ -43,10 +43,10 @@ namespace worker {
         return nCores;
     #endif
     }
-    
+
     int System::exec(const string &command) {
         Debug("Executing %s", command.c_str());
         return system(command.c_str());
     }
-    
+
 }

@@ -6,10 +6,10 @@
 namespace worker {
 
     struct System {
-        
+
         static uint getNbCores();
         static  int exec(const std::string &command);
-        
+
     private:
         System();
         ~System();

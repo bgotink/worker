@@ -21,26 +21,26 @@ typedef int32_t sint;
 #include <exception>
 
 namespace worker {
-    
+
     namespace exception {
-        
+
         class exception : public std::exception {
         protected:
             mutable char *str;
-            
+
         public:
             exception();
             exception(const exception &o);
             virtual ~exception() throw();
             virtual const char *what() const throw();
         };
-    
+
     }
-    
+
     std::string itoa(sint i);
-    
+
     std::vector<std::string> parseGlob(const std::string &str);
-    
+
     extern bool quiet;
     extern bool verbose;
 
