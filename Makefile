@@ -9,7 +9,7 @@ endif
 ARCH = $(shell uname)
 
 ifeq ($(ARCH),Darwin)
-	LIBS = -L/usr/local/bin -lboost_regex-mt
+	LIBS = -lboost_regex-mt
 else
 	LIBS = -lboost_regex
 endif
