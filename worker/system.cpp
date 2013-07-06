@@ -7,6 +7,10 @@
 #include <sys/sysctl.h>
 #endif
 
+#if defined(WORKER_IS_LINUX)
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 namespace worker {
