@@ -1,6 +1,8 @@
 ## Requirements
 
-* a GCC compiler supporting C++11 ```std::thread```, ```std::mutex``` and ```std::condition_variable```
+* compiler
+    * a GCC compiler supporting C++11 ```std::thread```, ```std::mutex```, ```std::condition_variable``` and multiline strings
+    * Clang v3.3 or higher
 * the [boost](http://boost.org) regex library
 * make
 
@@ -8,13 +10,13 @@ To install the requirements on OS X using [homebrew](//github.com/mxcl/homebrew)
 
 ```
 brew tap homebrew/versions
-brew install gcc49 make boost
+brew install make boost # clang is already available
 ```
 
 ## Building
 
 run ```make```  
-Please note that the Makefile has only been used on OS X Mountain Lion with GCC 4.9 and libboost installed using brew.
+Please note that the Makefile has only been used on OS X 10.8 and 10.9, with GCC 4.9 and Clang, and libboost installed using brew.
 
 ## Running
 
