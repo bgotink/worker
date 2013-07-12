@@ -16,7 +16,12 @@ brew install make boost # clang is already available
 ## Building
 
 run ```make```  
-Please note that the Makefile has only been used on OS X 10.8 and 10.9, with GCC 4.9 and Clang, and libboost installed using brew.
+This has been tested on:
+
+```
+OS X 10.8 and 10.9, with GCC 4.9 and Clang, and libboost installed using brew
+Ubuntu 12.04.2 LTS, with GCC 4.8.1 and Clang, libboost installed using APT
+```
 
 ## Running
 
