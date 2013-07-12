@@ -141,7 +141,7 @@ namespace worker {
         return uint(result + 1);
     }
 
-    Command::indices_t getPlaceholders(const string &str) {
+    Command::indices_t getPlaceholders(string &str) {
         Command::indices_t result;
 
         uint currentRef = 0;
@@ -154,8 +154,20 @@ namespace worker {
         Debug("Locating placeholders in string \"%s\"", strStart);
 
         while (true) {
-            if (!boost::regex_search(strCurrent, match, placeholderRegex))
+            if (!boost::regex_search(strCurrent, match, placeholderRegex)) {
+                if (!result.empty())
+                    return result;
+                
+                Debug("No placeholders given, adding one");
+                
+                uint placeholderIdx = 0;
+                size_t length = 2;
+                size_t offset = str.length() + 1;
+                str += " {}";
+                
+                result.push_back(Command::placeholder_t(offset, placeholderIdx, length, NULL));
                 return result;
+            }
 
             size_t offset = match.position();
             size_t length = match.length();
@@ -213,8 +225,8 @@ namespace worker {
         }
     }
 
-    Command::Command(const string &command)
-        : command(command), indices(getPlaceholders(command))
+    Command::Command(const string &c)
+        : command(c), indices(getPlaceholders(const_cast<string &>(command)))
     {
         Debug("Created command for string \"%s\" with %u placeholder references", command.c_str(), indices.size());
         nbPlaceholders = ::worker::getNbPlaceholders(indices);
