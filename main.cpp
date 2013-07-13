@@ -117,40 +117,62 @@ int main(int argc, char **argv) {
     
     worker::Debug("Parsed command with %u placeholders", nbPlaceholders);
 
-    if (nbPlaceholders != static_cast<uint>(argc - argpos)) {
-        worker::Fatal("Invalid number of arguments given, expected %d placeholder arguments but got %d", nbPlaceholders, argc - argpos);
-    }
+    if (nbPlaceholders == 1) {
+        vector<string> jobArguments;
+        
+        for (; argpos < argc; argpos++) {
+            vector<string> tmpArgs = worker::parseGlob(argv[argpos]);
+            jobArguments.insert(jobArguments.end(), tmpArgs.begin(), tmpArgs.end());
+        }
+        
+        uint nbJobs = jobArguments.size();
+        
+        worker::ThreadPool threadPool(min(nbThreads, nbJobs));
+        
+        for (uint i = 0; i < nbJobs; i++) {
+            vector<string> currArg;
+            currArg.push_back(jobArguments[i]);
+        
+            threadPool.schedule(command.fillArguments(currArg));
+        }
+        
+        threadPool.join();
+    } else { // nbPlaceholders != 1
+        if (nbPlaceholders != static_cast<uint>(argc - argpos)) {
+            worker::Fatal("Invalid number of arguments given, expected %d placeholder arguments but got %d", nbPlaceholders, argc - argpos);
+        }
 
-    vector<string> *jobArguments = new vector<string>[nbPlaceholders];
-    
-    for (uint idx = 0; argpos < argc; argpos++, idx++) {
-        jobArguments[idx] = worker::parseGlob(argv[argpos]);
-    }
-    
-    if (nbPlaceholders > 0) {
-        uint nbJobs = jobArguments[0].size();
-        for (uint i = 1; i < nbPlaceholders; i++) {
-            if (jobArguments[i].size() != nbJobs) {
-                worker::Fatal("Placeholder %u matches %u items while placeholder 0 matches %u items!", i, jobArguments[i].size(), nbJobs);
+        vector<string> *jobArguments = new vector<string>[nbPlaceholders];
+        
+        for (uint idx = 0; argpos < argc; argpos++, idx++) {
+            jobArguments[idx] = worker::parseGlob(argv[argpos]);
+        }
+        
+        if (nbPlaceholders > 0) {
+            uint nbJobs = jobArguments[0].size();
+            for (uint i = 1; i < nbPlaceholders; i++) {
+                if (jobArguments[i].size() != nbJobs) {
+                    worker::Fatal("Placeholder %u matches %u items while placeholder 0 matches %u items!", i, jobArguments[i].size(), nbJobs);
+                }
             }
         }
-    }
-    
-    uint nbJobs = (nbPlaceholders == 0) ? 1 : jobArguments[0].size();
-    worker::Debug("Using %u jobs", nbJobs);
-    
-    worker::ThreadPool threadPool(min(nbThreads, nbJobs));
-    
-    for (uint i = 0; i < nbJobs; i++) {
-        vector<string> thisArgs;
         
-        for (uint j = 0; j < nbPlaceholders; j++)
-            thisArgs.push_back(jobArguments[j][i]);
+        uint nbJobs = (nbPlaceholders == 0) ? 1 : jobArguments[0].size();
+        worker::Debug("Using %u jobs", nbJobs);
         
-        threadPool.schedule(command.fillArguments(thisArgs));
-    }
-    
-    delete[] jobArguments;
-    
-    threadPool.join();
+        worker::ThreadPool threadPool(min(nbThreads, nbJobs));
+        
+        for (uint i = 0; i < nbJobs; i++) {
+            vector<string> thisArgs;
+            
+            for (uint j = 0; j < nbPlaceholders; j++)
+                thisArgs.push_back(jobArguments[j][i]);
+            
+            threadPool.schedule(command.fillArguments(thisArgs));
+        }
+        
+        delete[] jobArguments;
+        
+        threadPool.join();
+    } // if (nbPlaceholders == 1)
 }
