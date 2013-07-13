@@ -60,20 +60,23 @@ bool matchesNoArg(const char *str, const char *pattern) {
 }
 
 bool matchesWithArg(const char *str, const char *pattern, const char **begin, int &index) {
-    if (!strcmp(str, pattern))
-        return true;
-    
     size_t len = strlen(pattern);
-    for (size_t i = 0; i < len; i++) {
-        if (str[i] != pattern[i])
-            return false;
+    if (strncmp(str, pattern, len))
+        // str != pattern, excluding \0 at the end
+        // --> return false;
+        return false;
+    
+    if (*(str + len) == '\0') {
+        // str ends -> *begin is the pointer to the value
+        // (type --name value)
+        index++;
+    } else {
+        // str doesn't end -> either type --name=value, --namevalue, -n=v or -nv
+        *begin = str + len;
+        if (**begin == '=')
+            (*begin)++;
     }
     
-    *begin = str + len;
-    if (**begin == '=')
-        (*begin)++;
-    
-    index++;
     return true;
 }
 
