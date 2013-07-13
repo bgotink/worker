@@ -2,13 +2,22 @@
 #include "system.hpp"
 #include "threadpool.hpp"
 #include "command.hpp"
+#include "version.hpp"
 
 #include "string.h"
 #include <string>
+#include <list>
+#include <vector>
 #include <cstdio>
 #include <cstdlib>
 
 using namespace std;
+
+typedef vector<string> arg_vec_t;
+typedef arg_vec_t::const_iterator arg_vec_citer_t;
+
+typedef list<string> arg_list_t;
+typedef arg_list_t::const_iterator arg_list_citer_t;
 
 const char * usage = R"EOS(    Usage:
         %1$s [-v] [-q] [-n nthreads] [--] <command> <arguments...>
@@ -88,12 +97,15 @@ int main(int argc, char **argv) {
         return -1;
     }
     
-    uint nbThreads = worker::System::getNbCores();
+    uint nbCores = worker::System::getNbCores(), nbThreads = nbCores;
+    
+    arg_list_t arguments;
     
     int argpos = 1;
     for (; argpos < argc; argpos++) {
         const char *curr = argv[argpos];
         const char *next = (argpos == argc - 1) ? NULL : argv[argpos+1];
+        
         if (matchesWithArg(curr, "-n", &next, argpos) || matchesWithArg(curr, "--nthreads", &next, argpos)) {
             if (next == NULL) {
                 PrintUsage();
@@ -120,45 +132,62 @@ int main(int argc, char **argv) {
         if (matchesNoArg(curr, "--")) {
             argpos++;
             break;
-        } else
-            break;
+        } else {
+            arguments.push_back(curr);
+        }
     }
     
-    worker::Command command(argv[argpos]);
-    const uint nbPlaceholders = command.getNbPlaceholders();
-    argpos++;
+    for (; argpos < argc; argpos++)
+        arguments.push_back(argv[argpos]);
     
+    if (arguments.empty()) {
+        PrintUsage();
+        return -2;
+    }
+    
+    worker::Debug("%s %u.%u.%u %d",
+            WORKER_PROGRAM_NAME,
+            WORKER_MAJOR_VERSION, WORKER_MINOR_VERSION, WORKER_REVISION,
+            WORKER_POSTSCRIPT);
+    worker::Debug("Licensed under a modified MIT license, available at <github.com/bgotink/worker/blob/master/LICENSE.md>");
+    
+    worker::Debug("Found %u cores, using maximally %u threads.", nbCores, nbThreads);
+    
+    worker::Command command(arguments.front());
+    arguments.pop_front();
+    
+    const uint nbPlaceholders = command.getNbPlaceholders();
     worker::Debug("Parsed command with %u placeholders", nbPlaceholders);
 
     if (nbPlaceholders == 1) {
-        vector<string> jobArguments;
+        arg_list_t jobArguments;
         
-        for (; argpos < argc; argpos++) {
-            vector<string> tmpArgs = worker::parseGlob(argv[argpos]);
+        for (arg_list_citer_t i = arguments.begin(), e = arguments.end(); i != e; i++) {
+            vector<string> tmpArgs = worker::parseGlob(*i);
             jobArguments.insert(jobArguments.end(), tmpArgs.begin(), tmpArgs.end());
         }
         
         uint nbJobs = jobArguments.size();
-        
         worker::ThreadPool threadPool(min(nbThreads, nbJobs));
         
-        for (uint i = 0; i < nbJobs; i++) {
-            vector<string> currArg;
-            currArg.push_back(jobArguments[i]);
+        for (arg_list_citer_t i = jobArguments.begin(), e = jobArguments.end(); i != e; i++) {
+            arg_vec_t currArg;
+            currArg.push_back(*i);
         
             threadPool.schedule(command.fillArguments(currArg));
         }
         
         threadPool.join();
     } else { // nbPlaceholders != 1
-        if (nbPlaceholders != static_cast<uint>(argc - argpos)) {
+        if (nbPlaceholders != arguments.size()) {
             worker::Fatal("Invalid number of arguments given, expected %d placeholder arguments but got %d", nbPlaceholders, argc - argpos);
         }
 
-        vector<string> *jobArguments = new vector<string>[nbPlaceholders];
+        arg_vec_t *jobArguments = new arg_vec_t[nbPlaceholders];
         
-        for (uint idx = 0; argpos < argc; argpos++, idx++) {
-            jobArguments[idx] = worker::parseGlob(argv[argpos]);
+        uint idx = 0;
+        for (arg_list_citer_t i = arguments.begin(), e = arguments.end(); i != e; i++, idx++) {
+            jobArguments[idx] = worker::parseGlob(*i);
         }
         
         if (nbPlaceholders > 0) {
@@ -170,13 +199,13 @@ int main(int argc, char **argv) {
             }
         }
         
-        uint nbJobs = (nbPlaceholders == 0) ? 1 : jobArguments[0].size();
+        uint nbJobs = jobArguments[0].size();
         worker::Debug("Using %u jobs", nbJobs);
         
         worker::ThreadPool threadPool(min(nbThreads, nbJobs));
         
         for (uint i = 0; i < nbJobs; i++) {
-            vector<string> thisArgs;
+            arg_vec_t thisArgs;
             
             for (uint j = 0; j < nbPlaceholders; j++)
                 thisArgs.push_back(jobArguments[j][i]);
