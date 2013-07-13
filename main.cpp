@@ -38,6 +38,16 @@ const char * usage = R"EOS(    Usage:
         The current directory contains story1.part1, story1.part2, story2.part1 and
         story2.part2. To create files story1 and story2 containing the entire stories:
                 %1$s 'cat {} {0/%%1/2} > {0/%%.part1/}' \*.part1
+
+        The current directory contains some png's you want to open using `xdg-open`,
+        however, xdg-open doesn't support multiple arguments:
+                %1$s 'xdg-open {}' '*.png'
+        If there's only one placeholder and it is located at the end of the command,
+        you can just leave it out:
+                %1$s xdg-open '*.png'
+        If there's only one placeholder, all other arguments will be seen as
+        replacements:
+                %1$s xdg-open *.png
 )EOS";
 
 char *command;
