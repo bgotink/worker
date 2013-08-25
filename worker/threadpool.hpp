@@ -20,7 +20,7 @@ namespace worker {
 
     struct ThreadPool {
 
-        ThreadPool(uint size);
+        ThreadPool(uint size, bool quiet);
         ~ThreadPool();
 
         void schedule(std::string command);
@@ -40,6 +40,8 @@ namespace worker {
         typedef std::condition_variable     condition_var_t;
 
         typedef std::queue<std::string>     queue_t;
+        
+        const bool quiet;
 
         thread_t * const threads;
         const uint size;

@@ -48,9 +48,12 @@ namespace worker {
     #endif
     }
 
-    int System::exec(const string &command) {
+    int System::exec(const string &command, bool quiet) {
         Debug("Executing %s", command.c_str());
-        return system(command.c_str());
+        if (quiet)
+            return system((command + " >/dev/null 2>&1 </dev/null").c_str());
+        else
+            return system(command.c_str());
     }
 
 }

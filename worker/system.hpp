@@ -8,7 +8,7 @@ namespace worker {
     struct System {
 
         static uint getNbCores();
-        static  int exec(const std::string &command);
+        static  int exec(const std::string &command, bool quiet);
 
     private:
         System();

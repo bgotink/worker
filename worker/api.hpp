@@ -1,9 +1,6 @@
 #ifndef __WORKER_API_
 #define __WORKER_API_
 
-#define APPNAME "Worker"
-#define VERSION "0.1"
-
 #if defined(_WIN32) || defined(_WIN64)
 #define WORKER_IS_WINDOWS
 #elif defined(__linux__)

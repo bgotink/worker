@@ -8,7 +8,7 @@ endif
 
 ARCH = $(shell uname)
 
-LIBS = -lboost_regex
+LIBS = -lboost_regex -lboost_program_options
 WARN = -Wall
 INCL = -I. -Iworker
 #OPT	 = -O3

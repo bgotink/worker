@@ -9,7 +9,9 @@ using namespace std;
 
 namespace worker {
 
-    ThreadPool::ThreadPool(uint size) : threads(new thread[size]), size(size), nbThreadsAlive(size), joining(false), terminating(false), joined(false) {
+    ThreadPool::ThreadPool(uint size, bool quiet) : quiet(quiet),
+            threads(new thread[size]), size(size), nbThreadsAlive(size),
+            joining(false), terminating(false), joined(false) {
         Debug("Creating threadpool with %u threads", size);
         for (uint i = 0; i < size; i++) {
             threads[i] = thread(impl::execute, ref(*this), ref(threads[i]));
@@ -211,7 +213,7 @@ namespace worker {
                 }
 
                 Debug("running command \"%s\"", command.c_str());
-                int retval = System::exec(command + " > /dev/null 2>&1 < /dev/null");
+                int retval = System::exec(command, pool.quiet);
                 if (retval != 0)
                     Warn("command \"%s\" exited with code %d", command.c_str(), retval);
                 else
