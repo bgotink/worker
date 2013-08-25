@@ -9,7 +9,7 @@ using namespace std;
 
 namespace worker {
 
-    ThreadPool::ThreadPool(uint size) : threads(new thread[size]), size(size), nbThreadsAlive(size), joining(false), joined(false) {
+    ThreadPool::ThreadPool(uint size) : threads(new thread[size]), size(size), nbThreadsAlive(size), joining(false), terminating(false), joined(false) {
         Debug("Creating threadpool with %u threads", size);
         for (uint i = 0; i < size; i++) {
             threads[i] = thread(impl::execute, ref(*this), ref(threads[i]));
