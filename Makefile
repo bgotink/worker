@@ -8,16 +8,17 @@ endif
 
 ARCH = $(shell uname)
 
-ifeq ($(ARCH),Darwin)
-	LIBS = -lboost_regex-mt
-else
-	LIBS = -lboost_regex
-endif
-
+LIBS = -lboost_regex
 WARN = -Wall
 INCL = -I. -Iworker
 #OPT	 = -O3
 OPT	= -g3
+
+ifeq ($(ARCH),Darwin)
+    BOOST_DIR = $(shell brew --prefix boost)
+    LIBS += -L$(BOOST_DIR)/lib
+    INCL += -I$(BOOST_DIR)/include
+endif
 
 SRCS = $(wildcard worker/*.cpp)
 OBJS = $(addprefix objs/, $(subst /,_,$(SRCS:.cpp=.o)))
