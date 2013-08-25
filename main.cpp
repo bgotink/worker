@@ -5,12 +5,10 @@
 #include "version.hpp"
 #include "options.hpp"
 
-#include "string.h"
 #include <string>
 #include <list>
 #include <vector>
 #include <cstdio>
-#include <cstdlib>
 
 using namespace std;
 using namespace worker;
@@ -45,7 +43,7 @@ int main(int argc, char **argv) {
             WORKER_POSTSCRIPT);
     Debug("Licensed under a modified MIT license, available at <github.com/bgotink/worker/blob/master/LICENSE.md>");
     
-    Debug("Found %u cores, using maximally %u threads.", worker::System::getNbCores(), options.nthreads);
+    Debug("Found %u cores, using maximally %u threads.", System::getNbCores(), options.nthreads);
     
     Command command(options.command);
     
@@ -56,12 +54,12 @@ int main(int argc, char **argv) {
         arg_list_t jobArguments;
         
         for (Options::argiter_t i = options.arguments.begin(), e = options.arguments.end(); i != e; i++) {
-            vector<string> tmpArgs = worker::parseGlob(*i);
+            vector<string> tmpArgs = parseGlob(*i);
             jobArguments.insert(jobArguments.end(), tmpArgs.begin(), tmpArgs.end());
         }
         
         uint nbJobs = jobArguments.size();
-        worker::ThreadPool threadPool(min(options.nthreads, nbJobs), !options.showOutput);
+        ThreadPool threadPool(min(options.nthreads, nbJobs), !options.showOutput);
         
         for (arg_list_citer_t i = jobArguments.begin(), e = jobArguments.end(); i != e; i++) {
             arg_vec_t currArg;
@@ -73,7 +71,7 @@ int main(int argc, char **argv) {
         threadPool.join();
     } else { // nbPlaceholders != 1
         if (nbPlaceholders != options.arguments.size()) {
-            worker::Fatal("Invalid number of arguments given, "
+            Fatal("Invalid number of arguments given, "
                 "expected %d placeholder arguments but got %d", nbPlaceholders, options.arguments.size());
         }
 
@@ -81,22 +79,22 @@ int main(int argc, char **argv) {
         
         uint idx = 0;
         for (Options::argiter_t i = options.arguments.begin(), e = options.arguments.end(); i != e; i++, idx++) {
-            jobArguments[idx] = worker::parseGlob(*i);
+            jobArguments[idx] = parseGlob(*i);
         }
         
         if (nbPlaceholders > 0) {
             uint nbJobs = jobArguments[0].size();
             for (uint i = 1; i < nbPlaceholders; i++) {
                 if (jobArguments[i].size() != nbJobs) {
-                    worker::Fatal("Placeholder %u matches %u items while placeholder 0 matches %u items!", i, jobArguments[i].size(), nbJobs);
+                    Fatal("Placeholder %u matches %u items while placeholder 0 matches %u items!", i, jobArguments[i].size(), nbJobs);
                 }
             }
         }
         
         uint nbJobs = jobArguments[0].size();
-        worker::Debug("Using %u jobs", nbJobs);
+        Debug("Using %u jobs", nbJobs);
         
-        worker::ThreadPool threadPool(min(options.nthreads, nbJobs), !options.showOutput);
+        ThreadPool threadPool(min(options.nthreads, nbJobs), !options.showOutput);
         
         for (uint i = 0; i < nbJobs; i++) {
             arg_vec_t thisArgs;
