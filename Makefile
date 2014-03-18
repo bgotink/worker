@@ -8,7 +8,7 @@ endif
 
 ARCH = $(shell uname)
 
-LIBS = -lboost_regex -lboost_program_options
+LIBS = -lboost_regex -lboost_program_options -lboost_iostreams
 WARN = -Wall
 INCL = -I. -Iworker
 #OPT	 = -O3
@@ -29,23 +29,23 @@ default: dirs bin/worker
 
 dirs:
 	/bin/mkdir -p bin objs
-	
+
 clean:
 	/bin/rm -rf bin/worker objs/*
-	
+
 rebuild: clean default
 
 bin/worker: objs/main.o objs/libworker.a
 	@echo "Linking $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
-	
+
 objs/main.o : main.cpp
 	@echo "Building $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
-	
+
 objs/worker_%.o: worker/%.cpp
 	@echo "Building $@"
-	@$(CXX) $(CXXFLAGS) -o $@ -c $< 
+	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 objs/libworker.a: $(OBJS)
 	@echo "Building library $@"

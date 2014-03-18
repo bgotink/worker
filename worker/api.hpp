@@ -47,6 +47,8 @@ namespace worker {
     void Info(const char *format, ...);
     void Debug(const char *format, ...);
 
+    void Output(const char *str);
+
     #define Assert(assertion) \
         ((assertion) ? (void)0 : \
             Fatal("Assertion \"%s\" failed in %s, line %d", \

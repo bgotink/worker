@@ -83,7 +83,7 @@ namespace worker {
     mutex _processMutex;
 
     void Process(const char *format, va_list args, const char *message, bool shouldAbort = false) {
-        std::unique_lock<mutex> lock(_processMutex);
+        unique_lock<mutex> lock(_processMutex);
 
 #if defined(WORKER_IS_WINDOWS)
         char errorBuf[2048];
@@ -96,7 +96,7 @@ namespace worker {
         }
 #endif
 
-        cerr << "[" << std::this_thread::get_id() << "]   \t";
+        cerr << "[" << this_thread::get_id() << "]   \t";
         cerr << "[" << message << "]" << "\t" << errorBuf << endl;
         fflush(stderr);
 
@@ -116,14 +116,14 @@ namespace worker {
     void Fatal(const char *format, ...) {
         va_list args;
         va_start(args, format);
-        Process(format, args, "FATAL", true);
+        Process(format, args, "FATAL  ", true);
         va_end(args);
     }
 
     void Error(const char *format, ...) {
         va_list args;
         va_start(args, format);
-        Process(format, args, "ERROR");
+        Process(format, args, "ERROR  ");
         va_end(args);
     }
     void Warn(const char *format, ...) {
@@ -132,7 +132,7 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "WARN");
+        Process(format, args, "WARN   ");
         va_end(args);
     }
     void Info(const char *format, ...) {
@@ -141,7 +141,7 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "INFO");
+        Process(format, args, "INFO   ");
         va_end(args);
     }
     void Debug(const char *format, ...) {
@@ -150,8 +150,20 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "DEBUG");
+        Process(format, args, "DEBUG  ");
         va_end(args);
+    }
+
+    mutex _outputMutex;
+
+    void Output(const char *output) {
+        unique_lock<mutex> lock(_outputMutex);
+        unique_lock<mutex> lock2(_processMutex);
+
+        if (verbose)
+            cerr << "[" << this_thread::get_id() << "]   \t[PROCESS]";
+        cout << output << endl;
+        fflush(stdout);
     }
 
 }
