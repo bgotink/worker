@@ -97,7 +97,7 @@ namespace worker {
 #endif
 
         cerr << "[" << this_thread::get_id() << "]   \t";
-        cerr << "[" << message << "]" << "\t" << errorBuf << endl;
+        cerr << "[" << message << "]" << " \t" << errorBuf << endl;
         fflush(stderr);
 
 #if !defined(PBRT_IS_WINDOWS)
@@ -116,7 +116,7 @@ namespace worker {
     void Fatal(const char *format, ...) {
         va_list args;
         va_start(args, format);
-        Process(format, args, "FATAL  ", true);
+        Process(format, args, "FATAL", true);
         va_end(args);
     }
 
@@ -132,7 +132,7 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "WARN   ");
+        Process(format, args, "WARN");
         va_end(args);
     }
     void Info(const char *format, ...) {
@@ -141,7 +141,7 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "INFO   ");
+        Process(format, args, "INFO");
         va_end(args);
     }
     void Debug(const char *format, ...) {
@@ -150,7 +150,7 @@ namespace worker {
 
         va_list args;
         va_start(args, format);
-        Process(format, args, "DEBUG  ");
+        Process(format, args, "DEBUG");
         va_end(args);
     }
 
@@ -161,7 +161,7 @@ namespace worker {
         unique_lock<mutex> lock2(_processMutex);
 
         if (verbose)
-            cerr << "[" << this_thread::get_id() << "]   \t[PROCESS]";
+            cerr << "[" << this_thread::get_id() << "]   \t[PROCESS]\t";
         cout << output << endl;
         fflush(stdout);
     }
