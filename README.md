@@ -27,7 +27,7 @@ Ubuntu 12.04.2 LTS, with GCC 4.8.1 and Clang, libboost installed using APT
 
 ```
 Usage: worker [options] <command> <argument> [argument ...]
-        
+
 Options:
   -h [ --help ]              produce this help message
   -v [ --verbose ]           run verbose, shows program output
@@ -67,13 +67,9 @@ Example usage:
   If there's only one placeholder, all other arguments will be seen as
   replacements:
     worker xdg-open *.png
-
-  Note that, due to the implementation of the exec call, the --output option must
-  be given if the output is stored in a file, i.e. by using
-    worker -o 'cat {} > combined_files' *
 ```
 
-Run ```bin/worker``` to get an updated usage statement.  
+Run ```bin/worker``` to get an up-to-date usage statement.  
 
 ## License
 

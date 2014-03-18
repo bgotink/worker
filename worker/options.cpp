@@ -8,11 +8,11 @@
 using namespace std;
 
 namespace worker {
-    
+
     namespace po = ::boost::program_options;
-    
+
     static const char * const usage = R"EOS(Usage: %1$s [options] <command> <argument> [argument ...]
-        
+
 %2$s
 Placeholders:
   You can use {} or {i} with i a non-negative integer to refer
@@ -44,23 +44,19 @@ Example usage:
   If there's only one placeholder, all other arguments will be seen as
   replacements:
     %1$s xdg-open *.png
-
-  Note that, due to the implementation of the exec call, the --output option must
-  be given if the output is stored in a file, i.e. by using
-    %1$s -o 'cat {} > combined_files' *
 )EOS";
-    
+
     Options::Options() {
     }
-    
+
     static po::options_description *usage_options(NULL);
     static const char *program_name;
-    
+
     static void createOptions() {
         if (usage_options != NULL) return;
-        
+
         po::options_description &desc = *(usage_options = new po::options_description("Options"));
-        
+
         desc.add_options()
             ("help,h", "produce this help message")
             ("verbose,v", "run verbose, shows program output")
@@ -73,27 +69,27 @@ Example usage:
 
     void Options::usage() {
         createOptions();
-        
+
         stringstream options_info;
         options_info << *usage_options;
-        
+
         fprintf(stderr, ::worker::usage, program_name, options_info.str().c_str());
     }
 
     Options &parseOptions(int argc, char **argv) {
         program_name = argv[0];
         createOptions();
-        
+
         po::options_description cmdline_options("Command");
         cmdline_options.add_options()
             ("command", po::value<Options::command_t>(), "the command")
             ("arg", po::value<Options::arglist_t>(), "argument");
-        
+
         cmdline_options.add(*usage_options);
-        
+
         po::positional_options_description pod;
         pod.add("command", 1).add("arg", -1);
-        
+
         po::variables_map vm;
         po::store(
             po::command_line_parser(argc, argv)
@@ -106,28 +102,28 @@ Example usage:
             Options::usage();
             exit(1);
         }
-        
+
         Options &options = *new Options;
-        
+
         if (vm.count("version")) {
             options.version = true;
             return options;
         }
         options.version = false;
-        
+
         // first the flags where verbosity AND output are set
         options.verbose = vm.count("verbose");
         options.quiet = options.verbose ? false : vm.count("quiet");
-        
+
         // now program output
         if (vm.count("output") || vm.count("nooutput")) {
             options.showOutput = vm.count("output") && !vm.count("nooutput");
         } else {
             options.showOutput = options.verbose;
         }
-        
+
         options.nthreads = vm.count("nthreads") ? vm["nthreads"].as<uint>() : System::getNbCores();
-        
+
         if (!vm.count("command")) {
             Options::usage();
             exit(-2);
@@ -138,7 +134,7 @@ Example usage:
             exit(-4);
         }
         options.arguments = vm["arg"].as<Options::arglist_t>();
-        
+
         return options;
     }
 }
