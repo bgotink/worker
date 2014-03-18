@@ -1,6 +1,8 @@
 #include "options.hpp"
 
 #include "system.hpp"
+#include "api.hpp"
+
 #include <boost/program_options.hpp>
 #include <sstream>
 #include <cstdio>
@@ -25,6 +27,11 @@ Placeholders:
     - cat {} > {0/%%e/o}     # replace the final character
                             # with 'o' if it is 'e'
 
+Notes:
+  The default number of threads differs depending on your system, it is the same
+  as the number of cores as returned by running
+    %3$s
+
 Example usage:
   The current directory contains story1, story1.part2, story2 and story2.part2.
   Running the following command will result in the files *.part2 being appended
@@ -44,6 +51,8 @@ Example usage:
   If there's only one placeholder, all other arguments will be seen as
   replacements:
     %1$s xdg-open *.png
+  Note that this is equivalent to using 'find', except for the multi-threading.
+    find . -maxdepth 1 -name \\*.png -exec xdg-open '{}' \\;
 )EOS";
 
     Options::Options() {
@@ -73,7 +82,17 @@ Example usage:
         stringstream options_info;
         options_info << *usage_options;
 
-        fprintf(stderr, ::worker::usage, program_name, options_info.str().c_str());
+        fprintf(stderr, ::worker::usage,
+            program_name,
+            options_info.str().c_str(),
+#if defined(WORKER_IS_LINUX)
+            "awk '/^processor/ {++n} END {print n+1}' /proc/cpuinfo"
+#elif defined(WORKER_IS_OSX)
+            "sysctl hw.ncpu"
+#else
+            "some command"
+#endif
+        );
     }
 
     Options &parseOptions(int argc, char **argv) {

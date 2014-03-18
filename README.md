@@ -3,13 +3,12 @@
 * compiler
     * a GCC compiler supporting C++11 ```std::thread```, ```std::mutex```, ```std::condition_variable``` and multiline strings
     * Clang v3.3 or higher
-* the [boost](http://boost.org) regex and program_options libraries
+* the [boost](http://boost.org) regex, program_options and iostreams libraries
 * make
 
 To install the requirements on OS X using [homebrew](//github.com/mxcl/homebrew):
 
 ```
-brew tap homebrew/versions
 brew install make boost # clang is already available
 ```
 
@@ -18,15 +17,16 @@ brew install make boost # clang is already available
 run ```make```  
 This has been tested on:
 
-```
-OS X 10.8 and 10.9, with GCC 4.9 and Clang, and libboost installed using brew
-Ubuntu 12.04.2 LTS, with GCC 4.8.1 and Clang, libboost installed using APT
-```
+| Version | Operating System | Compiler | libboost |
+| ------- | ---------------- | -------- | -------- |
+| 0.4.0   | OS X 10.9          | Clang 3.4           | installed via brew  |
+| 0.3.0   | OS X 10.8 and 10.9 | GCC 4.9 and Clang 3.3/3.4 | installed via brew  |
+| 0.3.0   | Ubuntu 12.04.2 LTS | GCC 4.8.1 and Clang | installed using APT |
 
 ## Running
 
 ```
-Usage: worker [options] <command> <argument> [argument ...]
+Usage: bin/worker [options] <command> <argument> [argument ...]
 
 Options:
   -h [ --help ]              produce this help message
@@ -48,28 +48,35 @@ Placeholders:
     - cat {} > {0/%e/o}     # replace the final character
                             # with 'o' if it is 'e'
 
+Notes:
+  The default number of threads differs depending on your system, it is the same
+  as the number of cores as returned by running
+    sysctl hw.ncpu
+
 Example usage:
   The current directory contains story1, story1.part2, story2 and story2.part2.
   Running the following command will result in the files *.part2 being appended
   to the other files and being removed:
-    worker -o 'cat {} >> {} && rm {0}' '*.part2' 'story{1,2}'
+    bin/worker -o 'cat {} >> {} && rm {0}' '*.part2' 'story{1,2}'
 
   The current directory contains story1.part1, story1.part2, story2.part1 and
   story2.part2. To create files story1 and story2 containing the entire stories:
-    worker -o 'cat {} {0/%1/2} > {0/%.part1/}' \*.part1
+    bin/worker -o 'cat {} {0/%1/2} > {0/%.part1/}' \*.part1
 
   The current directory contains some png's you want to open using `xdg-open`,
   however, xdg-open doesn't support multiple arguments:
-    worker 'xdg-open {}' '*.png'
+    bin/worker 'xdg-open {}' '*.png'
   If there's only one placeholder and it is located at the end of the command,
   you can just leave it out:
-    worker xdg-open '*.png'
+    bin/worker xdg-open '*.png'
   If there's only one placeholder, all other arguments will be seen as
   replacements:
-    worker xdg-open *.png
+    bin/worker xdg-open *.png
+  Note that this is equivalent to using 'find', except for the multi-threading.
+    find . -maxdepth 1 -name \\*.png -exec xdg-open '{}' \\;
 ```
 
-Run ```bin/worker``` to get an up-to-date usage statement.  
+Run ```bin/worker``` to get a usage statement adapted for your system.  
 
 ## License
 

@@ -7,6 +7,8 @@
 #define WORKER_IS_LINUX
 #elif defined(__OpenBSD__)
 #define WORKER_IS_OPENBSD
+#elif defined(__APPLE__)
+#define WORKER_IS_OSX
 #endif
 
 #include <stdint.h>
