@@ -110,12 +110,19 @@ Example usage:
         pod.add("command", 1).add("arg", -1);
 
         po::variables_map vm;
-        po::store(
-            po::command_line_parser(argc, argv)
-                .options(cmdline_options)
-                .positional(pod)
-                .run(),
-            vm);
+
+        try {
+            po::store(
+                po::command_line_parser(argc, argv)
+                    .options(cmdline_options)
+                    .positional(pod)
+                    .run(),
+                vm);
+        } catch (std::exception &e) {
+            puts(e.what());
+            Options::usage();
+            exit(1);
+        }
 
         if (vm.count("help")) {
             Options::usage();
