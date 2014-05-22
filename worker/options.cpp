@@ -52,7 +52,7 @@ Example usage:
   replacements:
     %1$s xdg-open *.png
   Note that this is equivalent to using 'find', except for the multi-threading.
-    find . -maxdepth 1 -name \\*.png -exec xdg-open '{}' \\;
+    find . -maxdepth 1 -name \*.png -exec xdg-open '{}' \;
 )EOS";
 
     Options::Options() {
