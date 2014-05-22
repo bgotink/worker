@@ -157,14 +157,14 @@ namespace worker {
             if (!boost::regex_search(strCurrent, match, placeholderRegex)) {
                 if (!result.empty())
                     return result;
-                
+
                 Debug("No placeholders given, adding one");
-                
+
                 uint placeholderIdx = 0;
                 size_t length = 2;
-                size_t offset = str.length() + 1;
-                str += " {}";
-                
+                size_t offset = str.length() + 2;
+                str += " \"{}\"";
+
                 result.push_back(Command::placeholder_t(offset, placeholderIdx, length, NULL));
                 return result;
             }
