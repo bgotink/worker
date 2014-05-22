@@ -73,7 +73,7 @@ Example usage:
   replacements:
     bin/worker xdg-open *.png
   Note that this is equivalent to using 'find', except for the multi-threading.
-    find . -maxdepth 1 -name \\*.png -exec xdg-open '{}' \\;
+    find . -maxdepth 1 -name \*.png -exec xdg-open '{}' \;
 ```
 
 Run ```bin/worker``` to get a usage statement adapted for your system.  
