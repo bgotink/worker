@@ -26,7 +26,7 @@ OBJS = $(addprefix objs/, $(subst /,_,$(SRCS:.cpp=.o)))
 CXXFLAGS = $(WARN) $(OPT) $(INCL)
 
 define mkdir
-@mkdir -p $@
+mkdir -p $@
 endef
 
 define compile
@@ -34,15 +34,14 @@ define compile
 @$(CXX) $(CXXFLAGS) -o $@ -c $<
 endef
 
-.PHONY: default clean rebuild
+.PHONY: default lib clean rebuild
 
-default: objs bin bin/worker
+default: lib bin bin/worker
 
-dirs:
-	mkdir -p bin objs
+lib: objs objs/libworker.a
 
 clean:
-	rm -rf bin/worker objs/*
+	rm -rf bin objs
 
 rebuild: clean default
 
