@@ -19,6 +19,7 @@ This has been tested on:
 
 | Version | Operating System | Compiler | libboost |
 | ------- | ---------------- | -------- | -------- |
+| 0.4.0   | OS X 10.10         | Clang 3.5           | installed via brew  |
 | 0.4.0   | OS X 10.9          | Clang 3.4           | installed via brew  |
 | 0.3.0   | OS X 10.8 and 10.9 | GCC 4.9 and Clang 3.3/3.4 | installed via brew  |
 | 0.3.0   | Ubuntu 12.04.2 LTS | GCC 4.8.1 and Clang | installed using APT |
